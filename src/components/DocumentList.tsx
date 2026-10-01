@@ -8,7 +8,8 @@ import {
   Star, 
   Download, 
   Trash2, 
-  Eye
+  Eye,
+  Binary
 } from 'lucide-react';
 import { VaultDocument, DocumentCategory } from '../types';
 import { formatBytes, formatDate } from '../utils/formatters';
@@ -26,6 +27,7 @@ interface DocumentListProps {
   onDeleteDocument: (doc: VaultDocument) => void;
   onToggleStar: (docId: string) => void;
   onUploadClick: () => void;
+  onInspectCrypto?: (doc: VaultDocument) => void;
 }
 
 const CATEGORIES: { label: string; value: DocumentCategory | 'ALL' }[] = [
@@ -49,6 +51,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onDeleteDocument,
   onToggleStar,
   onUploadClick,
+  onInspectCrypto,
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'size-desc' | 'title-asc'>('date-desc');
@@ -193,6 +196,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
               onDownload={onDownloadDocument}
               onDelete={onDeleteDocument}
               onToggleStar={onToggleStar}
+              onInspectCrypto={onInspectCrypto}
             />
           ))}
         </div>
@@ -254,6 +258,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
+                        {onInspectCrypto && (
+                          <button
+                            onClick={() => onInspectCrypto(doc)}
+                            className="p-1.5 text-indigo-600 hover:text-indigo-800 rounded-md hover:bg-indigo-50 transition-colors"
+                            title="Inspect Ciphertext & Cryptography"
+                          >
+                            <Binary className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => onDownloadDocument(doc)}
                           className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-slate-100 transition-colors"

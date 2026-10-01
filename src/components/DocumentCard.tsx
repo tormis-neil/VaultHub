@@ -13,7 +13,8 @@ import {
   Trash2,
   Calendar,
   Building2,
-  ShieldCheck
+  ShieldCheck,
+  Binary
 } from 'lucide-react';
 import { VaultDocument, DocumentCategory } from '../types';
 import { formatBytes, formatDate } from '../utils/formatters';
@@ -24,6 +25,7 @@ interface DocumentCardProps {
   onDownload: (doc: VaultDocument) => void;
   onDelete: (doc: VaultDocument) => void;
   onToggleStar: (docId: string) => void;
+  onInspectCrypto?: (doc: VaultDocument) => void;
 }
 
 export const DocumentCard: React.FC<DocumentCardProps> = ({
@@ -32,6 +34,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   onDownload,
   onDelete,
   onToggleStar,
+  onInspectCrypto,
 }) => {
   const getCategoryTheme = (category: DocumentCategory) => {
     switch (category) {
@@ -254,6 +257,15 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             >
               Open
             </button>
+            {onInspectCrypto && (
+              <button
+                onClick={() => onInspectCrypto(doc)}
+                title="Inspect AES-256 Ciphertext & Cryptography"
+                className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-colors cursor-pointer"
+              >
+                <Binary className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               onClick={() => onDownload(doc)}
               title="Download file"

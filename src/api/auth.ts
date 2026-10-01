@@ -24,6 +24,7 @@ export interface RegisterPayload {
 }
 
 export interface ProfileUpdatePayload {
+  fullName?: string;
   email?: string;
   studentId?: string;
   degreeProgram?: string;

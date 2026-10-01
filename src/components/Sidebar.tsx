@@ -11,7 +11,8 @@ import {
   HardDrive, 
   ShieldCheck, 
   Plus, 
-  Layers
+  Layers,
+  Database
 } from 'lucide-react';
 import { DocumentCategory, StudentUser, VaultDocument } from '../types';
 import { formatBytes } from '../utils/formatters';
@@ -184,7 +185,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* Storage & Privacy Quick Links */}
+          {/* Storage & Account */}
           <div>
             <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               Account & Storage

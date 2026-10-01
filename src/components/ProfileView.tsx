@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Mail, 
@@ -41,6 +41,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [email, setEmail] = useState(user.email);
   const [degreeProgram, setDegreeProgram] = useState(user.degreeProgram);
   const [academicYear, setAcademicYear] = useState(user.academicYear);
+
+  useEffect(() => {
+    setFullName(user.fullName);
+    setStudentId(user.studentId);
+    setEmail(user.email);
+    setDegreeProgram(user.degreeProgram);
+    setAcademicYear(user.academicYear);
+  }, [user]);
 
   // Delete modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

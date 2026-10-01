@@ -10,7 +10,7 @@
  */
 
 import { apiClient } from './client';
-import { VaultDocument, DocumentCategory } from '../types';
+import { VaultDocument, DocumentCategory, CryptoDetails, TamperTestResult } from '../types';
 
 export interface DocumentUploadParams {
   file: File;
@@ -89,5 +89,19 @@ export const documentsApi = {
     fallbackFileName: string = 'document'
   ): Promise<{ blob: Blob; fileName: string; checksumSHA256?: string }> {
     return apiClient.download(`/documents/${id}/download/`, fallbackFileName);
+  },
+
+  /**
+   * Fetch full cryptographic metadata and raw ciphertext hex dump.
+   */
+  async getCryptoDetails(id: string | number): Promise<CryptoDetails> {
+    return apiClient.get<CryptoDetails>(`/documents/${id}/crypto-details/`);
+  },
+
+  /**
+   * Run an active tampering attack simulation against AES-GCM MAC validation.
+   */
+  async testTampering(id: string | number): Promise<TamperTestResult> {
+    return apiClient.post<TamperTestResult>(`/documents/${id}/tamper-test/`);
   },
 };

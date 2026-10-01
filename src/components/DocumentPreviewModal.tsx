@@ -9,13 +9,14 @@ import {
   Check, 
   Award, 
   FileSpreadsheet, 
-  CreditCard,
-  Building2,
-  Calendar,
-  Lock,
-  Share2,
-  HardDrive,
-  Star
+  CreditCard, 
+  Building2, 
+  Calendar, 
+  Lock, 
+  Share2, 
+  HardDrive, 
+  Star,
+  Binary
 } from 'lucide-react';
 import { VaultDocument } from '../types';
 import { formatBytes, formatDate, truncateHash } from '../utils/formatters';
@@ -26,6 +27,7 @@ interface DocumentPreviewModalProps {
   onClose: () => void;
   onDownload: (doc: VaultDocument) => void;
   onToggleStar: (docId: string) => void;
+  onInspectCrypto?: (doc: VaultDocument) => void;
 }
 
 export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
@@ -34,6 +36,7 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   onClose,
   onDownload,
   onToggleStar,
+  onInspectCrypto,
 }) => {
   const [copiedHash, setCopiedHash] = useState(false);
   const [showSecurityDetails, setShowSecurityDetails] = useState(false);
@@ -318,6 +321,21 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                     <span className="text-slate-500">Access Permission:</span>
                     <span className="text-emerald-700 font-semibold">Private to authenticated student</span>
                   </div>
+
+                  {onInspectCrypto && (
+                    <div className="pt-2 border-t border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onInspectCrypto(doc);
+                        }}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                      >
+                        <Binary className="w-3.5 h-3.5" />
+                        <span>Launch Cryptographic Hex & Integrity Inspector</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -20,6 +20,8 @@ import { SecurityInfoModal } from './components/SecurityInfoModal';
 import { AuthModal } from './components/AuthModal';
 import { AuthPage } from './components/AuthPage';
 import { ProfileView } from './components/ProfileView';
+import { CryptoInspectorModal } from './components/CryptoInspectorModal';
+import { DatabaseInspectorView } from './components/DatabaseInspectorView';
 
 export default function App() {
   const [user, setUser] = useState<StudentUser | null>(null);
@@ -36,6 +38,7 @@ export default function App() {
   // Modals state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<VaultDocument | null>(null);
+  const [cryptoDoc, setCryptoDoc] = useState<VaultDocument | null>(null);
   const [deleteDoc, setDeleteDoc] = useState<VaultDocument | null>(null);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -176,6 +179,9 @@ export default function App() {
   const handleUpdateUser = async (updatedUser: StudentUser) => {
     try {
       const saved = await authApi.updateProfile({
+        fullName: updatedUser.fullName,
+        studentId: updatedUser.studentId,
+        email: updatedUser.email,
         degreeProgram: updatedUser.degreeProgram,
         academicYear: updatedUser.academicYear,
       });
@@ -303,6 +309,17 @@ export default function App() {
               onDeleteDocument={(doc) => setDeleteDoc(doc)}
               onToggleStar={handleToggleStar}
               onUploadClick={() => setIsUploadOpen(true)}
+              onInspectCrypto={(doc) => setCryptoDoc(doc)}
+            />
+          )}
+
+          {/* Database & Tables Inspector View */}
+          {currentView === 'database' && (
+            <DatabaseInspectorView
+              onInspectDocumentCrypto={(docId) => {
+                const target = documents.find((d) => d.id === docId);
+                if (target) setCryptoDoc(target);
+              }}
             />
           )}
 
@@ -360,6 +377,13 @@ export default function App() {
         onClose={() => setPreviewDoc(null)}
         onDownload={handleDownload}
         onToggleStar={handleToggleStar}
+        onInspectCrypto={(doc) => setCryptoDoc(doc)}
+      />
+
+      <CryptoInspectorModal
+        document={cryptoDoc}
+        isOpen={!!cryptoDoc}
+        onClose={() => setCryptoDoc(null)}
       />
 
       <DeleteConfirmModal

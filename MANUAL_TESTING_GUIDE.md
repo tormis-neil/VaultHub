@@ -1,315 +1,286 @@
- # VaultHub — Manual Testing Guide & Test Execution Specification
-**Document Version:** 1.0.0  
-**Phase:** Phase 1 — Security and Document Management Implementation  
-**Standard:** IEEE 829 / ISTQB Compliant Test Case Format  
-**Target Environment:** Local Development (Frontend: React 19 + Vite @ port 3000 | Backend: Django REST Framework @ port 8000 | Database: MySQL)
+# VaultHub — Cryptographic Security & Cloud SQL Manual Testing Guide
+**Project Name:** VaultHub (Academic Student Cryptographic Document Storage)  
+**Target Environment:** React 19 + TypeScript + Node.js Express + Google Cloud SQL (PostgreSQL 18.6)  
+**Security Standards:** NIST SP 800-38D (AES-256-GCM), FIPS 180-4 (SHA-256), NIST SP 800-132 (PBKDF2)  
+**Document Purpose:** Presentation, Instructor Evaluation, and Technical Defense Guide  
 
 ---
 
-## 1. Quick Start: How to Run the Website
+## 1. Google Cloud SQL Infrastructure & Database Overview
 
-To run the complete VaultHub system on your machine, you need **two terminal windows**: one for the **Django Backend** and one for the **React Frontend**.
+VaultHub does not use client-side mockups or fake local tables. It connects directly to an active **Google Cloud SQL relational PostgreSQL instance** running in the Google Cloud Platform (GCP).
 
-### Prerequisites Check
-- **Python:** 3.10+ (Verified: Python 3.13 installed)
-- **Node.js:** v18.0+ or v20.0+ LTS with `npm` (Required for running the React frontend)
-  - *If Node.js is not yet installed:* Open PowerShell as Administrator and run:
-    ```powershell
-    winget install OpenJS.NodeJS.LTS
-    ```
-    *Or download directly from [nodejs.org](https://nodejs.org).* Once installed, restart your terminal.
-
----
-
-### Step A: Start the Backend (Terminal 1)
-
-1. Open your terminal in the project directory:
-   ```powershell
-   cd "c:\software projects\vaulthub\backend"
-   ```
-2. Activate your Python environment (if using a virtualenv) and ensure dependencies are installed:
-   ```powershell
-   pip install -r requirements.txt
-   ```
-3. Run database migrations:
-   ```powershell
-   python manage.py migrate
-   ```
-4. Seed demo users and initial documents (optional, if fresh database):
-   ```powershell
-   python seed_demo.py
-   ```
-5. Start the Django API server on port 8000:
-   ```powershell
-   python manage.py runserver 8000
-   ```
-   > **Status Check:** Backend will be listening at `http://127.0.0.1:8000/`. You can open `http://127.0.0.1:8000/api/auth/csrf/` in your browser to verify it responds with `{"status":"ok","csrftoken":"..."}`.
+### Cloud SQL Instance Specifications
+| Parameter | Value |
+| :--- | :--- |
+| **GCP Project ID** | `subtle-unison-vvr20` |
+| **GCP Project Number** | `38132910031` |
+| **Cloud Region** | `asia-southeast1` |
+| **Cloud SQL Instance ID** | `ai-studio-7f61e4e0` |
+| **Database Engine** | PostgreSQL 18.6 (x86_64 Debian) |
+| **Database Name** | `cloud_sql_development_database` |
+| **Database App User** | `ai_studio_app_user` |
+| **Tables Provisioned** | `users`, `vault_documents`, `activity_logs` |
 
 ---
 
-### Step B: Start the Frontend (Terminal 2)
+## 2. How to View the Cloud SQL Database Directly
 
-1. Open a second terminal in the project root:
-   ```powershell
-   cd "c:\software projects\vaulthub"
+You have **two authentic methods** to show the live database to your instructor:
+
+### Method A: Google Cloud Console (Cloud SQL Studio Web UI)
+This opens Google's official cloud database management interface in your browser:
+1. Open [https://console.cloud.google.com/](https://console.cloud.google.com/) and sign in with your Google account (`tormisneilmayo@gmail.com`).
+2. In the top project selector dropdown, choose project: **`subtle-unison-vvr20`**.
+3. In the navigation menu or search bar, search for **Cloud SQL** (or **SQL**).
+4. Click on instance: **`ai-studio-7f61e4e0`**.
+5. In the left menu, click **Cloud SQL Studio**.
+6. Sign in:
+   - **Database:** `cloud_sql_development_database`
+   - **User:** `ai_studio_app_user` (or `postgres`)
+7. Expand `cloud_sql_development_database` $\to$ `public` $\to$ `Tables` to view:
+   - `users`
+   - `vault_documents`
+   - `activity_logs`
+8. In the Query Editor, paste and click **Run**:
+   ```sql
+   SELECT id, student_id, full_name, email, password_hash, password_salt FROM users;
    ```
-2. Install frontend dependencies (first time only):
-   ```powershell
-   npm install
-   ```
-3. Start the Vite development server:
-   ```powershell
-   npm run dev
-   ```
-4. Open your web browser and navigate to:
-   ```
-   http://localhost:3000
-   ```
+
+### Method B: Terminal CLI Database Commands (Instant & Interactive)
+From your terminal root, run these built-in database commands:
+* **View Stored Student Accounts & Salted PBKDF2 Hashes:**
+  ```bash
+  npm run db:users
+  ```
+* **View Encrypted Documents, Nonces (IVs), MAC Tags & Ciphertext:**
+  ```bash
+  npm run db:documents
+  ```
+* **Run Any Custom SQL Query Against Cloud SQL:**
+  ```bash
+  npm run db:query "SELECT id, title, file_size_bytes, checksum_sha256 FROM vault_documents;"
+  ```
 
 ---
 
-## 2. Seeded Test Credentials
+## 3. Document Encryption: AES-256-GCM (Authenticated Encryption)
 
-The database contains pre-configured test student accounts for immediate testing:
-
-| User Role / Name | Student ID | Email / Username | Password | Enrolled Program |
-| :--- | :--- | :--- | :--- | :--- |
-| **Neil Mayo Tormis** (Primary Senior) | `2023-01894-MN` | `tormisneilmayo@gmail.com` | `Password123!` | BS Information Technology |
-| **Sophia Elena Rivera** (Junior) | `2024-00431-CS` | `sophia.rivera@univ.edu` | `Password123!` | BS Computer Science |
-
----
-
-## 3. Test Execution Matrix
-
-### Module 1: Authentication & Credential Security (Argon2id)
-
-#### TC-AUTH-01: Successful Login with Email & Argon2id Verification
-- **Objective:** Verify a student can log in using their registered email and password.
-- **Preconditions:** Django server running at port 8000; frontend at port 3000.
-- **Steps:**
-  1. Navigate to `http://localhost:3000`.
-  2. In the Login form, enter `tormisneilmayo@gmail.com`.
-  3. Enter password `Password123!`.
-  4. Click **Sign In to Vault**.
-- **Expected Result:**
-  - Login succeeds without errors.
-  - User is redirected to the main Vault dashboard.
-  - Top header displays "Neil Mayo Tormis" with badge "2023-01894-MN".
-  - Toast message appears: "Welcome back, Neil Mayo Tormis!".
-  - Session cookie `sessionid` and `csrftoken` are stored in browser storage.
-
-#### TC-AUTH-02: Successful Login with Student ID Number
-- **Objective:** Verify students can authenticate using their institutional Student ID instead of email.
-- **Steps:**
-  1. Sign out if logged in.
-  2. In the Login form, enter `2023-01894-MN`.
-  3. Enter password `Password123!`.
-  4. Click **Sign In to Vault**.
-- **Expected Result:**
-  - Login succeeds. Dashboard displays student's documents and storage quota.
-
-#### TC-AUTH-03: Login Rejection with Incorrect Password
-- **Objective:** Verify brute-force/invalid authentication attempts are rejected.
-- **Steps:**
-  1. On the login screen, enter `tormisneilmayo@gmail.com`.
-  2. Enter incorrect password `WrongPassword999!`.
-  3. Click **Sign In to Vault**.
-- **Expected Result:**
-  - Login is denied (HTTP 400 Bad Request).
-  - An alert message displays: *"Invalid credentials. Please check your email/ID and password."*
-  - User remains unauthenticated on the login page.
-
-#### TC-AUTH-04: New Student Registration & Quota Provisioning
-- **Objective:** Verify that registering a new account provisions a 500 MB quota and hashes the password with Argon2id.
-- **Steps:**
-  1. On the login screen, click **Create Account**.
-  2. Fill in:
-     - **First Name:** `Juan`
-     - **Last Name:** `Dela Cruz`
-     - **Student ID:** `2025-99881-IT`
-     - **Degree Program:** `BS Information Technology`
-     - **Academic Year:** `1st Year - Freshman`
-     - **Email:** `juan.delacruz@univ.edu`
-     - **Password:** `StudentPass2026!`
-  3. Click **Register Account**.
-- **Expected Result:**
-  - Registration completes (HTTP 201 Created).
-  - User is immediately signed in as "Juan Dela Cruz".
-  - Storage Gauge displays `0 B used of 500 MB (0%)`.
-  - Document vault is empty with prompt to upload first file.
-  - Avatar initials display `JD`.
-
-#### TC-AUTH-05: Secure Session Logout & Cache Clearance
-- **Objective:** Ensure session termination clears client state and invalidates Django session.
-- **Steps:**
-  1. From the dashboard, click the student profile avatar in the top right.
-  2. Click **Sign Out**.
-- **Expected Result:**
-  - User is redirected back to `AuthPage`.
-  - Client state documents and logs are wiped from memory.
-  - Browser network tab confirms `POST /api/auth/logout/` returned 200.
-  - Refreshing the page does NOT automatically log the user back in.
+### A. What Information is Encrypted vs. Plaintext?
+* **Encrypted at Rest:** The **entire raw binary payload (file bytes)** of the document (`ciphertextBase64`).
+  * *Why:* Contains confidential grades, personal identifying information (PII), academic honors, clearances, and registrar signatures. If the database or physical server is stolen, an adversary cannot read a single byte without the symmetric key.
+* **Stored in Plaintext (Metadata):** `title`, `category`, `fileName`, `fileSizeBytes`, `fileType`, and `uploadDate`.
+  * *Why:* The relational database index requires metadata in plaintext to sort, filter, paginate, and search documents without having to decrypt all files in the vault on every request.
+* **Cryptographic Vectors Stored with File:**
+  * **IV (Nonce):** 12 bytes (96 bits) in hex (`encryption_iv_hex`).
+  * **Authentication Tag:** 16 bytes (128 bits) in hex (`encryption_tag_hex`).
 
 ---
 
-### Module 2: Document Management & AES-256-GCM Cryptography
+### B. Exact File & Line of Code for Encryption
+* **Source File:** `src/utils/crypto.ts`
+* **Function:** `encryptDocument(plaintext: Buffer): EncryptedPayload`
+* **Lines of Code (Lines 38 to 56):**
 
-#### TC-DOC-01: Document Upload with SHA-256 Integrity & AES-256-GCM Encryption
-- **Objective:** Verify an uploaded academic file is checksummed and encrypted at rest.
-- **Preconditions:** Logged in as Neil Mayo Tormis.
-- **Steps:**
-  1. Click the **+ Upload Document** button in the header or sidebar.
-  2. Select any local test file (e.g., a PDF, PNG, or TXT file).
-  3. Provide metadata:
-     - **Document Title:** `Capstone Project Proposal Draft`
-     - **Category:** `Transcripts` (or `Certificates`, `Resumes`, `Identification Cards`, `Clearances`)
-     - **Issuing Authority:** `College of Computer Studies`
-     - **Academic Year:** `AY 2025-2026`
-     - Check **Mark as starred / important**.
-  4. Click **Encrypt & Save to Vault**.
-- **Expected Result:**
-  - Upload completes successfully (HTTP 201 Created).
-  - Toast displays: *"Capstone Project Proposal Draft encrypted & stored in your vault."*
-  - Document appears at the top of the Document List with:
-    - Status badge: `Encrypted`
-    - Encryption method: `AES-256-GCM`
-    - Gold star icon enabled.
-  - Storage gauge increases by the exact file size.
+```typescript
+export function encryptDocument(plaintext: Buffer): EncryptedPayload {
+  // 1. Generate a 12-byte (96-bit) cryptographically random nonce
+  const iv = crypto.randomBytes(12);
 
-#### TC-DOC-02: Verification of Encrypted Bytes on Disk (Ciphertext at Rest)
-- **Objective:** Verify that the stored file in the filesystem is NOT readable plaintext.
-- **Steps:**
-  1. In Windows Explorer or PowerShell, navigate to:
-     `c:\software projects\vaulthub\backend\media\vault_files\`
-  2. Open the most recently created file in a text editor (e.g., Notepad).
-- **Expected Result:**
-  - The file contents are binary gibberish/ciphertext.
-  - Plaintext text from the original file cannot be found.
-  - Proves AES-256-GCM encryption at rest is strictly active.
+  // 2. Initialize AES-256-GCM cipher with master key and nonce
+  const cipher = crypto.createCipheriv('aes-256-gcm', MASTER_KEY, iv);
 
-#### TC-DOC-03: Cryptographic Integrity Verification (SHA-256 Checksum)
-- **Objective:** Ensure the SHA-256 checksum displayed in the UI matches the original unencrypted file.
-- **Steps:**
-  1. On the newly uploaded file, click the **Preview / Details (eye icon)**.
-  2. Inspect the **Security Details** section in the modal.
-- **Expected Result:**
-  - **Algorithm:** AES-256-GCM.
-  - **SHA-256 Hash:** 64-character hexadecimal checksum is displayed.
-  - Running `Get-FileHash -Algorithm SHA256 <original_file>` in PowerShell matches this exact hash.
+  // 3. Encrypt file plaintext stream into binary ciphertext
+  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
 
-#### TC-DOC-04: Document Decryption & Secure Plaintext Download
-- **Objective:** Verify that authorized download streams decrypted plaintext with matching hash.
-- **Steps:**
-  1. Click the **Download (arrow-down icon)** on the uploaded document.
-  2. Save the file to your computer.
-  3. Open the downloaded file.
-- **Expected Result:**
-  - File opens cleanly and is 100% identical to the original unencrypted file.
-  - Network inspect confirms headers:
-    - `Content-Disposition: attachment; filename="..."`
-    - `X-Checksum-SHA256: <original_hash>`
-    - `X-Encryption-Method: AES-256-GCM`
-  - A toast displays: *"Decrypted and downloaded [filename]"*.
+  // 4. Extract the 16-byte (128-bit) Galois MAC authentication tag
+  const tag = cipher.getAuthTag();
 
-#### TC-DOC-05: Toggle Starred / Important Tag
-- **Objective:** Verify documents can be dynamically flagged and filtered.
-- **Steps:**
-  1. In the document list, click the Star icon on any document to unstar it.
-  2. Click the sidebar filter **Starred Documents**.
-- **Expected Result:**
-  - Star icon immediately reflects toggled state (filled gold vs outline).
-  - Starred Documents view only lists documents where `isStarred == true`.
-  - Reloading the page retains the updated star state (persisted via `PATCH /api/documents/<id>/`).
+  // 5. Compute SHA-256 hash of plaintext for integrity verification
+  const checksum = computeSha256(plaintext);
 
-#### TC-DOC-06: Document Deletion & Immediate Quota Reclaim
-- **Objective:** Verify deleting a document purges ciphertext and restores storage quota.
-- **Steps:**
-  1. Note your current storage consumed (e.g., `2.4 MB`).
-  2. Click the **Delete (trash icon)** on a document.
-  3. In the confirmation dialog, click **Permanently Delete**.
-- **Expected Result:**
-  - Confirmation modal closes.
-  - Document is removed from the vault table.
-  - Storage gauge drops immediately by the deleted document's size.
-  - File is deleted from disk in `media/vault_files/`.
-
----
-
-### Module 3: Security Audit Trail & Accountability
-
-#### TC-AUD-01: Audit Log Generation for Security Events
-- **Objective:** Verify every sensitive action creates an immutable audit record.
-- **Steps:**
-  1. In the sidebar, click **Security Logs** (or Audit Trail).
-  2. Inspect the latest log entries.
-- **Expected Result:**
-  - All recent actions appear with accurate timestamps and details:
-    - `[USER_LOGIN]` — Student signed in with Argon2 verification.
-    - `[DOCUMENT_UPLOAD]` — Uploaded and encrypted with AES-256 (with file size).
-    - `[DOCUMENT_DOWNLOAD]` — Decrypted and downloaded by student.
-    - `[DOCUMENT_DELETE]` — Deleted document from vault.
-    - `[USER_LOGOUT]` — Signed out session.
-  - Each log displays the client IP address (`127.0.0.1` locally) and user agent/device.
-
----
-
-### Module 4: Access Control & Data Isolation
-
-#### TC-SEC-01: Data Isolation Between Different Students
-- **Objective:** Verify Student A cannot see, access, or download Student B's documents.
-- **Steps:**
-  1. Log in as Neil (`tormisneilmayo@gmail.com`) and note the document list.
-  2. Log out.
-  3. Log in as Sophia (`sophia.rivera@univ.edu`, password: `Password123!`).
-- **Expected Result:**
-  - Sophia's vault only displays Sophia's documents.
-  - None of Neil's documents or audit log entries appear in Sophia's dashboard.
-  - Direct HTTP `GET /api/documents/<neils_doc_id>/` returns `404 Not Found`.
-
-#### TC-SEC-02: Unauthorized API Access Protection
-- **Objective:** Verify protected endpoints reject unauthenticated requests.
-- **Steps:**
-  1. Open a private / incognito browser window.
-  2. Directly open: `http://127.0.0.1:8000/api/documents/`.
-- **Expected Result:**
-  - Server returns `403 Forbidden` or `401 Unauthorized` with:
-    `{"detail":"Authentication credentials were not provided."}`.
-
----
-
-## 4. Manual Test Execution Sign-off Sheet
-
-| Test Case ID | Test Case Title | Tester Name | Date Executed | Status (PASS/FAIL) | Notes / Observations |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TC-AUTH-01** | Login with Email (Argon2id) | | | | |
-| **TC-AUTH-02** | Login with Student ID | | | | |
-| **TC-AUTH-03** | Login Rejection (Bad Password) | | | | |
-| **TC-AUTH-04** | Student Registration & Quota | | | | |
-| **TC-AUTH-05** | Secure Session Logout | | | | |
-| **TC-DOC-01** | Upload with AES-256-GCM | | | | |
-| **TC-DOC-02** | Ciphertext Verification on Disk | | | | |
-| **TC-DOC-03** | SHA-256 Checksum Validation | | | | |
-| **TC-DOC-04** | Decryption & Plaintext Download | | | | |
-| **TC-DOC-05** | Star / Important Toggle | | | | |
-| **TC-DOC-06** | Deletion & Quota Reclaim | | | | |
-| **TC-AUD-01** | Security Audit Trail Entries | | | | |
-| **TC-SEC-01** | Student Data Isolation | | | | |
-| **TC-SEC-02** | Unauthenticated Access Block | | | | |
-
----
-
-## 5. Automated Test Verification Summary
-
-To execute the automated regression test suite alongside manual testing, run these commands in the terminal:
-
-```powershell
-# 1. Frontend-Backend Contract Integration Tests (28 tests)
-python backend/test_frontend_contracts.py
-
-# 2. Comprehensive Security, Cryptography & Auth API Tests (45 tests)
-python backend/test_api.py
-
-# 3. Seeded Demo User End-to-End Workflow Verification
-python backend/test_seeded_flow.py
+  return {
+    ciphertextBase64: ciphertext.toString('base64'),
+    ivHex: iv.toString('hex'),
+    tagHex: tag.toString('hex'),
+    checksumSha256: checksum,
+    fileSizeBytes: plaintext.length,
+  };
+}
 ```
-**Current Automated Test Score:** **73 / 73 PASS (100%)**
+
+#### Line-by-Line Technical Explanation:
+1. `crypto.randomBytes(12)`: Generates a 96-bit random vector using the OS cryptographic entropy pool. Under GCM mode, reusing an IV with the same key breaks confidentiality; therefore, every single document gets a completely unique IV.
+2. `crypto.createCipheriv('aes-256-gcm', MASTER_KEY, iv)`: Instantiates a hardware-accelerated AES cipher operating in Galois/Counter Mode with 256-bit key length.
+3. `Buffer.concat([cipher.update(plaintext), cipher.final()])`: Performs block-by-block authenticated encryption.
+4. `cipher.getAuthTag()`: Computes the 128-bit authentication tag using Galois field multiplication ($\text{GF}(2^{128})$). This tag guarantees that any modification to the ciphertext during storage will be detected upon decryption.
+5. In `server.ts` (Lines 660–676), `encryptDocument(fileBuffer)` is called upon file upload, and the resulting `ciphertextBase64`, `encryptionIvHex`, and `encryptionTagHex` are persisted to Cloud SQL table `vault_documents`.
+
+---
+
+## 4. Document Decryption & Tamper Verification
+
+### A. Exact File & Line of Code for Decryption
+* **Source File:** `src/utils/crypto.ts`
+* **Function:** `decryptDocument(ciphertextInput, ivHex, tagHex): Buffer`
+* **Lines of Code (Lines 58 to 73):**
+
+```typescript
+export function decryptDocument(
+  ciphertextInput: Buffer | string,
+  ivHex: string,
+  tagHex: string
+): Buffer {
+  const ciphertext = typeof ciphertextInput === 'string'
+    ? Buffer.from(ciphertextInput, 'base64')
+    : ciphertextInput;
+  const iv = Buffer.from(ivHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+
+  // 1. Initialize AES-256-GCM decipher
+  const decipher = crypto.createDecipheriv('aes-256-gcm', MASTER_KEY, iv);
+
+  // 2. Enforce authentication tag verification
+  decipher.setAuthTag(tag);
+
+  // 3. Decrypt ciphertext and verify MAC authentication tag
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+}
+```
+
+#### How Decryption Works During Download:
+1. In `server.ts` (Lines 813–845), when an authenticated student requests `GET /api/documents/:id/download/`:
+2. Cloud SQL retrieves `ciphertext_base64`, `encryption_iv_hex`, and `encryption_tag_hex`.
+3. `decryptDocument()` is executed.
+4. If **any single bit** of the ciphertext or tag was tampered with in Cloud SQL, `decipher.final()` immediately throws an `Unsupported state or unable to authenticate data` error and halts with zero data leakage.
+5. The server recalculates `computeSha256(plaintext)` and verifies that it exactly equals `checksum_sha256`.
+6. The clean decrypted file is streamed to the browser with headers:
+   - `Content-Disposition: attachment; filename="..."`
+   - `X-Checksum-SHA256: <64-char-hex>`
+   - `X-Encryption-Method: AES-256-GCM`
+
+---
+
+## 5. Cryptographic Hashing: Document Integrity & User Passwords
+
+Hashing is a **one-way, irreversible mathematical function**. VaultHub implements two distinct hashing mechanisms:
+
+### Mechanism 1: Document Integrity Fingerprinting (SHA-256)
+* **What is hashed:** The raw plaintext bytes of the uploaded file.
+* **Source File:** `src/utils/crypto.ts` (Lines 20 to 24)
+* **Lines of Code:**
+  ```typescript
+  export function computeSha256(data: Buffer | string): string {
+    const buf = typeof data === 'string' ? Buffer.from(data, 'utf-8') : data;
+    return crypto.createHash('sha256').update(buf).digest('hex');
+  }
+  ```
+* **Where Stored in Database:** Column `checksum_sha256` in table `vault_documents`.
+* **How to Inspect:**
+  Run `npm run db:documents` $\to$ examine the `sha256_hash` column.
+
+---
+
+### Mechanism 2: Salted User Password Hashing (PBKDF2-SHA256)
+* **What is hashed:** The student's login password combined with a 128-bit random salt.
+* **Why PBKDF2:** Plaintext passwords must never be stored. PBKDF2 applies 100,000 iterations of SHA-256 to drastically increase brute-force and dictionary attack costs.
+* **Source File:** `src/utils/crypto.ts` (Lines 78 to 106)
+* **Lines of Code:**
+  ```typescript
+  export function hashPassword(password: string, saltHex?: string): HashedPasswordResult {
+    // 16-byte (128-bit) cryptographically random salt per user
+    const salt = saltHex ? Buffer.from(saltHex, 'hex') : crypto.randomBytes(16);
+    
+    // PBKDF2 with 100,000 iterations of SHA-256 producing a 256-bit key
+    const derivedKey = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+
+    return {
+      hashHex: derivedKey.toString('hex'),
+      saltHex: salt.toString('hex'),
+    };
+  }
+
+  export function verifyPassword(password: string, storedHashHex: string, storedSaltHex: string): boolean {
+    const { hashHex } = hashPassword(password, storedSaltHex);
+    // Constant-time buffer comparison to prevent timing side-channel attacks
+    return crypto.timingSafeEqual(Buffer.from(hashHex, 'hex'), Buffer.from(storedHashHex, 'hex'));
+  }
+  ```
+* **Where Stored in Database:** Columns `password_hash` and `password_salt` in table `users`.
+* **How to Inspect:**
+  Run `npm run db:users` $\to$ examine `password_hash_sample` and `password_salt`.
+
+---
+
+## 6. Step-by-Step Test Execution Specification
+
+### Test Case 1: Salted Password Authentication in Cloud SQL
+* **Objective:** Verify that passwords in Cloud SQL are stored as PBKDF2 salted hashes, not plaintext.
+* **Execution:**
+  1. Open terminal and run:
+     ```bash
+     npm run db:users
+     ```
+  2. **Expected Result:**
+     - `Neil Mayo Tormis` has a 64-character hex hash starting with `9c0904...` and a 32-character hex salt `595c04...`.
+     - Plaintext passwords like `"Password123!"` are nowhere in the database.
+  3. Sign in to the web app using `tormisneilmayo@gmail.com` and `Password123!`.
+  4. **Expected Result:** Authentication succeeds; audit log records `USER_LOGIN (PBKDF2-SHA256 verification)`.
+
+---
+
+### Test Case 2: Document Upload, AES-256-GCM Encryption & Cloud SQL Storage
+* **Objective:** Verify that uploaded documents are encrypted into random ciphertext before writing to PostgreSQL.
+* **Execution:**
+  1. In the web portal, click **Upload Document**.
+  2. Select any PDF, DOCX, or text file.
+  3. Enter document title (e.g. `Capstone Final Draft.pdf`), choose category `Academic Clearance`, and click **Encrypt & Store Document**.
+  4. In your terminal, run:
+     ```bash
+     npm run db:documents
+     ```
+  5. **Expected Result:**
+     - The document appears in Cloud SQL.
+     - `nonce_iv_12b` shows a unique 24-character hex string.
+     - `mac_tag_16b` shows a 32-character hex authentication tag.
+     - `ciphertext_sample` shows random base64 ciphertext (e.g., `4hfx5T/iqMC...`).
+
+---
+
+### Test Case 3: Decryption on Download & Integrity Check
+* **Objective:** Verify that downloading decrypts the file and validates the SHA-256 checksum.
+* **Execution:**
+  1. On the dashboard, locate `Official Transcript of Records (OTR) - 3rd Year`.
+  2. Click the **Download** icon.
+  3. **Expected Result:**
+     - Browser downloads `TOR_3rdYear_Official_Sealed.pdf` (HTTP 200).
+     - Open the downloaded file: the transcript grades, student number (`2023-01894-MN`), and text are 100% intact and readable.
+     - Open browser DevTools $\to$ Network tab $\to$ click the download request $\to$ Response Headers:
+       - `X-Encryption-Method: AES-256-GCM`
+       - `X-Checksum-SHA256: ef76a423dc42f0d6...`
+
+---
+
+### Test Case 4: Live Student Profile Update in Cloud SQL
+* **Objective:** Verify that profile field updates update live in Cloud SQL PostgreSQL.
+* **Execution:**
+  1. Click **Profile** in the web sidebar.
+  2. Click the edit icon next to **Academic Year** or **Degree Program**.
+  3. Change the field and click the checkmark to save.
+  4. In your terminal, run:
+     ```bash
+     npm run db:users
+     ```
+  5. **Expected Result:** The updated degree program or year is immediately reflected in the Cloud SQL `users` table.
+
+---
+
+### Test Case 5: Tamper-Evident Security Audit Logs
+* **Objective:** Verify that all user actions are permanently logged to Cloud SQL with IP addresses and cryptographic actions.
+* **Execution:**
+  1. In your terminal, run:
+     ```bash
+     npm run db:query "SELECT action, status, document_title, timestamp FROM activity_logs ORDER BY timestamp DESC LIMIT 5;"
+     ```
+  2. **Expected Result:**
+     - Returns a live table of audit logs (`USER_LOGIN`, `DOCUMENT_UPLOAD`, `DOCUMENT_DECRYPT`) stored in Cloud SQL table `activity_logs`.
