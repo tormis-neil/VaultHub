@@ -1,0 +1,6 @@
+{
+  "name": "VaultHub - Student Document Vault System",
+  "description": "A secure and centralized web repository for students to store, organize, encrypt, and audit academic documents.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

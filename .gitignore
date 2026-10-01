@@ -1,0 +1,37 @@
+# Frontend dependencies & build
+node_modules/
+build/
+dist/
+dist-ssr/
+*.local
+
+# Environment variables & secrets (NEVER commit live keys/passwords)
+.env
+.env.*
+backend/.env
+!.env.example
+!backend/.env.example
+
+# Python & Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+db.sqlite3
+*.log
+
+# Backend uploaded media & sensitive encrypted files
+backend/media/*
+!backend/media/.gitkeep
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Editor & OS artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
